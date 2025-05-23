@@ -216,20 +216,10 @@ export const createEquipment = async (req, res, next) => {
       PhotoPath: equipment.photoPath
     });
     
-    // Update DeliveryNote deliveredEquipment count
-    const updateQuery = `
-      UPDATE DeliveryNotes
-      SET 
-        DeliveredEquipment = (
-          SELECT COUNT(*) 
-          FROM Equipments 
-          WHERE DeliveryNoteId = @param0
-        ),
-        UpdatedAt = GETDATE()
-      WHERE Id = @param0
-    `;
-    
-    await executeQuery(updateQuery, [equipment.deliveryNoteId]);
+    // Update progress using the new stored procedure
+    await executeStoredProcedure('sp_UpdateProgress', {
+      DeliveryNoteId: equipment.deliveryNoteId
+    });
     
     res.status(201).json({
       id: result[0].Id,
@@ -290,90 +280,22 @@ export const updateEquipment = async (req, res, next) => {
       updates.estimatedEquipmentId
     ]);
     
-    // If verification status changed to true, update delivery note verified count
-    if (updates.isVerified === true) {
-      // First get the delivery note ID
-      const getEquipQuery = `
-        SELECT DeliveryNoteId 
-        FROM Equipments 
-        WHERE Id = @param0
-      `;
+    // Get the delivery note ID for this equipment
+    const getEquipQuery = `
+      SELECT DeliveryNoteId 
+      FROM Equipments 
+      WHERE Id = @param0
+    `;
+    
+    const equipResult = await executeQuery(getEquipQuery, [id]);
+    
+    if (equipResult.length > 0 && equipResult[0].DeliveryNoteId) {
+      const deliveryNoteId = equipResult[0].DeliveryNoteId;
       
-      const equipResult = await executeQuery(getEquipQuery, [id]);
-      
-      if (equipResult.length > 0 && equipResult[0].DeliveryNoteId) {
-        const deliveryNoteId = equipResult[0].DeliveryNoteId;
-        
-        // Update DeliveryNote verifiedEquipment count and progress
-        const updateDNQuery = `
-          UPDATE DeliveryNotes
-          SET 
-            VerifiedEquipment = (
-              SELECT COUNT(*) 
-              FROM Equipments 
-              WHERE DeliveryNoteId = @param0 AND IsVerified = 1
-            ),
-            Progress = (
-              SELECT CAST(COUNT(*) * 100.0 / NULLIF(EstimatedEquipment, 0) AS int)
-              FROM Equipments 
-              WHERE DeliveryNoteId = @param0 AND IsVerified = 1
-            ),
-            UpdatedAt = GETDATE()
-          WHERE Id = @param0
-        `;
-        
-        await executeQuery(updateDNQuery, [deliveryNoteId]);
-        
-        // Update Order progress
-        const updateOrderQuery = `
-          UPDATE Orders
-          SET 
-            Progress = (
-              SELECT AVG(Progress)
-              FROM DeliveryNotes
-              WHERE OrderId = (
-                SELECT OrderId 
-                FROM DeliveryNotes 
-                WHERE Id = @param0
-              )
-            ),
-            UpdatedAt = GETDATE()
-          WHERE Id = (
-            SELECT OrderId 
-            FROM DeliveryNotes 
-            WHERE Id = @param0
-          )
-        `;
-        
-        await executeQuery(updateOrderQuery, [deliveryNoteId]);
-        
-        // Update Project progress
-        const updateProjectQuery = `
-          UPDATE Projects
-          SET 
-            Progress = (
-              SELECT AVG(Progress)
-              FROM Orders
-              WHERE ProjectId = (
-                SELECT p.Id 
-                FROM Projects p
-                JOIN Orders o ON o.ProjectId = p.Id
-                JOIN DeliveryNotes dn ON dn.OrderId = o.Id
-                WHERE dn.Id = @param0
-              )
-            ),
-            UpdatedAt = GETDATE()
-          WHERE Id = (
-            SELECT p.Id 
-            FROM Projects p
-            JOIN Orders o ON o.ProjectId = p.Id
-            JOIN DeliveryNotes dn ON dn.OrderId = o.Id
-            WHERE dn.Id = @param0
-          )
-        `;
-        
-        await executeQuery(updateProjectQuery, [deliveryNoteId]);
-      }
+      // Update progress using the new stored procedure
+      await executeStoredProcedure('sp_UpdateProgress', {
+        DeliveryNoteId: deliveryNoteId
+      });
     }
     
     res.json({ id, ...updates });
@@ -408,30 +330,10 @@ export const deleteEquipment = async (req, res, next) => {
     await executeQuery(query, [id]);
     
     if (deliveryNoteId) {
-      // Update DeliveryNote counts
-      const updateQuery = `
-        UPDATE DeliveryNotes
-        SET 
-          DeliveredEquipment = (
-            SELECT COUNT(*) 
-            FROM Equipments 
-            WHERE DeliveryNoteId = @param0
-          ),
-          VerifiedEquipment = (
-            SELECT COUNT(*) 
-            FROM Equipments 
-            WHERE DeliveryNoteId = @param0 AND IsVerified = 1
-          ),
-          Progress = (
-            SELECT CAST(COUNT(*) * 100.0 / NULLIF(EstimatedEquipment, 0) AS int)
-            FROM Equipments 
-            WHERE DeliveryNoteId = @param0 AND IsVerified = 1
-          ),
-          UpdatedAt = GETDATE()
-        WHERE Id = @param0
-      `;
-      
-      await executeQuery(updateQuery, [deliveryNoteId]);
+      // Update progress using the new stored procedure
+      await executeStoredProcedure('sp_UpdateProgress', {
+        DeliveryNoteId: deliveryNoteId
+      });
     }
     
     res.json({ message: 'Equipo eliminado correctamente' });
@@ -463,6 +365,20 @@ export const matchEquipment = async (req, res, next) => {
       });
     }
     
+    // Get delivery note ID
+    const getEquipQuery = `
+      SELECT DeliveryNoteId 
+      FROM Equipments 
+      WHERE Id = @param0
+    `;
+    
+    const equipResult = await executeQuery(getEquipQuery, [id]);
+    const deliveryNoteId = equipResult.length > 0 ? equipResult[0].DeliveryNoteId : null;
+    
+    if (!deliveryNoteId) {
+      return res.status(404).json({ message: 'Equipo no encontrado' });
+    }
+    
     const query = `
       UPDATE Equipments
       SET 
@@ -489,6 +405,11 @@ export const matchEquipment = async (req, res, next) => {
     
     await executeQuery(updateEstimatedQuery, [estimatedEquipmentId]);
     
+    // Update progress using the new stored procedure
+    await executeStoredProcedure('sp_UpdateProgress', {
+      DeliveryNoteId: deliveryNoteId
+    });
+    
     res.json({ 
       message: 'Equipo emparejado correctamente',
       equipmentId: id,
@@ -513,15 +434,20 @@ export const unmatchEquipment = async (req, res, next) => {
       });
     }
     
-    // First get the estimated equipment ID
+    // Get the delivery note ID and estimated equipment ID
     const getEquipQuery = `
-      SELECT EstimatedEquipmentId 
+      SELECT DeliveryNoteId, EstimatedEquipmentId 
       FROM Equipments 
       WHERE Id = @param0
     `;
     
     const equipResult = await executeQuery(getEquipQuery, [id]);
+    const deliveryNoteId = equipResult.length > 0 ? equipResult[0].DeliveryNoteId : null;
     const estimatedEquipmentId = equipResult.length > 0 ? equipResult[0].EstimatedEquipmentId : null;
+    
+    if (!deliveryNoteId) {
+      return res.status(404).json({ message: 'Equipo no encontrado' });
+    }
     
     // Update equipment
     const query = `
@@ -551,6 +477,11 @@ export const unmatchEquipment = async (req, res, next) => {
       
       await executeQuery(updateEstimatedQuery, [estimatedEquipmentId]);
     }
+    
+    // Update progress using the new stored procedure
+    await executeStoredProcedure('sp_UpdateProgress', {
+      DeliveryNoteId: deliveryNoteId
+    });
     
     res.json({ 
       message: 'Emparejamiento desvinculado correctamente',
@@ -604,75 +535,10 @@ export const verifyEquipment = async (req, res, next) => {
     
     await executeQuery(query, [id, photoPath]);
     
-    // Update DeliveryNote verifiedEquipment count and progress
-    const updateDNQuery = `
-      UPDATE DeliveryNotes
-      SET 
-        VerifiedEquipment = (
-          SELECT COUNT(*) 
-          FROM Equipments 
-          WHERE DeliveryNoteId = @param0 AND IsVerified = 1
-        ),
-        Progress = (
-          SELECT CAST(COUNT(*) * 100.0 / NULLIF(EstimatedEquipment, 0) AS int)
-          FROM Equipments 
-          WHERE DeliveryNoteId = @param0 AND IsVerified = 1
-        ),
-        UpdatedAt = GETDATE()
-      WHERE Id = @param0
-    `;
-    
-    await executeQuery(updateDNQuery, [deliveryNoteId]);
-    
-    // Update Order progress
-    const updateOrderQuery = `
-      UPDATE Orders
-      SET 
-        Progress = (
-          SELECT AVG(Progress)
-          FROM DeliveryNotes
-          WHERE OrderId = (
-            SELECT OrderId 
-            FROM DeliveryNotes 
-            WHERE Id = @param0
-          )
-        ),
-        UpdatedAt = GETDATE()
-      WHERE Id = (
-        SELECT OrderId 
-        FROM DeliveryNotes 
-        WHERE Id = @param0
-      )
-    `;
-    
-    await executeQuery(updateOrderQuery, [deliveryNoteId]);
-    
-    // Update Project progress
-    const updateProjectQuery = `
-      UPDATE Projects
-      SET 
-        Progress = (
-          SELECT AVG(Progress)
-          FROM Orders
-          WHERE ProjectId = (
-            SELECT p.Id 
-            FROM Projects p
-            JOIN Orders o ON o.ProjectId = p.Id
-            JOIN DeliveryNotes dn ON dn.OrderId = o.Id
-            WHERE dn.Id = @param0
-          )
-        ),
-        UpdatedAt = GETDATE()
-      WHERE Id = (
-        SELECT p.Id 
-        FROM Projects p
-        JOIN Orders o ON o.ProjectId = p.Id
-        JOIN DeliveryNotes dn ON dn.OrderId = o.Id
-        WHERE dn.Id = @param0
-      )
-    `;
-    
-    await executeQuery(updateProjectQuery, [deliveryNoteId]);
+    // Update progress using the new stored procedure
+    await executeStoredProcedure('sp_UpdateProgress', {
+      DeliveryNoteId: deliveryNoteId
+    });
     
     res.json({ 
       message: 'Equipo verificado correctamente',

@@ -237,12 +237,9 @@ export const updateDeliveryNote = async (req, res, next) => {
       SET 
         Code = COALESCE(@param1, Code),
         EstimatedEquipment = COALESCE(@param2, EstimatedEquipment),
-        DeliveredEquipment = COALESCE(@param3, DeliveredEquipment),
-        VerifiedEquipment = COALESCE(@param4, VerifiedEquipment),
-        Status = COALESCE(@param5, Status),
-        Progress = COALESCE(@param6, Progress),
-        AttachmentPath = COALESCE(@param7, AttachmentPath),
-        AttachmentType = COALESCE(@param8, AttachmentType),
+        Status = COALESCE(@param3, Status),
+        AttachmentPath = COALESCE(@param4, AttachmentPath),
+        AttachmentType = COALESCE(@param5, AttachmentType),
         UpdatedAt = GETDATE()
       WHERE Id = @param0
     `;
@@ -251,13 +248,15 @@ export const updateDeliveryNote = async (req, res, next) => {
       id,
       updates.code,
       updates.estimatedEquipment,
-      updates.deliveredEquipment,
-      updates.verifiedEquipment,
       updates.status,
-      updates.progress,
       updates.attachmentPath,
       updates.attachmentType
     ]);
+    
+    // Update progress using stored procedure
+    await executeStoredProcedure('sp_UpdateProgress', {
+      DeliveryNoteId: id
+    });
     
     res.json({ id, ...updates });
   } catch (error) {
@@ -276,11 +275,70 @@ export const deleteDeliveryNote = async (req, res, next) => {
       return res.json({ message: 'Albarán eliminado correctamente' });
     }
     
-    // In a real application, we might want to use a stored procedure for this
-    // to ensure all related data is also deleted or handled appropriately
-    const query = `DELETE FROM DeliveryNotes WHERE Id = @param0`;
+    // Get the order ID before deleting
+    const getOrderIdQuery = `
+      SELECT OrderId FROM DeliveryNotes WHERE Id = @param0
+    `;
+    const orderResult = await executeQuery(getOrderIdQuery, [id]);
+    const orderId = orderResult.length > 0 ? orderResult[0].OrderId : null;
     
+    // Delete any equipment associated with this delivery note
+    const deleteEquipmentQuery = `
+      DELETE FROM Equipments WHERE DeliveryNoteId = @param0
+    `;
+    await executeQuery(deleteEquipmentQuery, [id]);
+    
+    // Delete the delivery note
+    const query = `DELETE FROM DeliveryNotes WHERE Id = @param0`;
     await executeQuery(query, [id]);
+    
+    // If we have an order ID, update the order and project progress
+    if (orderId) {
+      const updateOrderQuery = `
+        UPDATE Orders
+        SET 
+          Progress = (
+            SELECT 
+              CASE
+                WHEN COUNT(dn.Id) = 0 THEN 0
+                ELSE AVG(dn.Progress)
+              END
+            FROM DeliveryNotes dn
+            WHERE dn.OrderId = @param0
+          ),
+          UpdatedAt = GETDATE()
+        WHERE Id = @param0
+      `;
+      
+      await executeQuery(updateOrderQuery, [orderId]);
+      
+      // Get project ID
+      const getProjectIdQuery = `
+        SELECT ProjectId FROM Orders WHERE Id = @param0
+      `;
+      const projectResult = await executeQuery(getProjectIdQuery, [orderId]);
+      const projectId = projectResult.length > 0 ? projectResult[0].ProjectId : null;
+      
+      if (projectId) {
+        const updateProjectQuery = `
+          UPDATE Projects
+          SET 
+            Progress = (
+              SELECT 
+                CASE
+                  WHEN COUNT(o.Id) = 0 THEN 0
+                  ELSE AVG(o.Progress)
+                END
+              FROM Orders o
+              WHERE o.ProjectId = @param0
+            ),
+            UpdatedAt = GETDATE()
+          WHERE Id = @param0
+        `;
+        
+        await executeQuery(updateProjectQuery, [projectId]);
+      }
+    }
     
     res.json({ message: 'Albarán eliminado correctamente' });
   } catch (error) {
@@ -314,22 +372,21 @@ export const verifyDeliveryNote = async (req, res, next) => {
     
     await executeQuery(equipmentQuery, [id]);
     
-    // Update delivery note status and progress
+    // Update delivery note status
     const updateQuery = `
       UPDATE DeliveryNotes
       SET 
         Status = 'Completado',
-        VerifiedEquipment = (
-          SELECT COUNT(*) 
-          FROM Equipments 
-          WHERE DeliveryNoteId = @param0 AND IsVerified = 1
-        ),
-        Progress = 100,
         UpdatedAt = GETDATE()
       WHERE Id = @param0
     `;
     
     await executeQuery(updateQuery, [id]);
+    
+    // Update progress using the new stored procedure
+    await executeStoredProcedure('sp_UpdateProgress', {
+      DeliveryNoteId: id
+    });
     
     res.json({ 
       message: 'Albarán verificado correctamente',
@@ -367,6 +424,11 @@ export const sendToDCIM = async (req, res, next) => {
     `;
     
     await executeQuery(updateQuery, [id]);
+    
+    // Update progress using the new stored procedure
+    await executeStoredProcedure('sp_UpdateProgress', {
+      DeliveryNoteId: id
+    });
     
     // In a real implementation, this would integrate with the DCIM system
     // For now, just return success

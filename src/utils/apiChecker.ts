@@ -10,6 +10,7 @@ export const checkApiConnectivity = async (
   success: boolean;
   error?: string;
   details?: any;
+  statusCode?: number;
 }> => {
   // If callback provided, set status to checking
   if (setStatusCallback) {
@@ -23,8 +24,12 @@ export const checkApiConnectivity = async (
     // Try to call the health endpoint
     const result = await apiService.healthCheck();
     
-    // Log the result
-    console.log('API connectivity check result:', result);
+    // Log the result with more details
+    console.log('API connectivity check result:', {
+      success: result.success,
+      statusCode: result.statusCode,
+      details: result.data || result.error
+    });
     
     if (result.success) {
       // If callback provided, set status to connected
@@ -44,11 +49,16 @@ export const checkApiConnectivity = async (
       
       return {
         success: false,
-        error: result.error || 'Unknown error'
+        error: result.error || 'Unknown error',
+        statusCode: result.statusCode,
+        details: result.details
       };
     }
   } catch (error) {
-    console.error('API connectivity check failed with exception:', error);
+    console.error('API connectivity check failed with exception:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    });
     
     // If callback provided, set status to failed
     if (setStatusCallback) {

@@ -81,17 +81,50 @@ export const apiService = {
   healthCheck: async () => {
     try {
       console.log('Sending health check request to:', API_BASE_URL + '/health');
-      const response = await api.get('/health');
+      const response = await api.get('/health', { 
+        // Reduce timeout for health checks to fail faster
+        timeout: 5000,
+        // Retry on network errors
+        validateStatus: (status) => status >= 200 && status < 500 
+      });
       console.log('Health check response:', response.data);
       return {
         success: true,
         data: response.data
       };
     } catch (error) {
-      console.error('Health check failed:', error);
+      // Improved error handling with more specific information
+      let errorMessage = 'Unknown error';
+      let statusCode = undefined;
+      
+      if (axios.isAxiosError(error)) {
+        if (error.code === 'ECONNABORTED') {
+          errorMessage = 'Connection timeout - server might be down or unreachable';
+        } else if (error.code === 'ERR_NETWORK') {
+          errorMessage = 'Network error - please check your connection and ensure the API server is running';
+        } else if (error.response) {
+          statusCode = error.response.status;
+          errorMessage = `Server responded with status ${statusCode}: ${error.response.statusText}`;
+        } else if (error.request) {
+          errorMessage = 'No response received from server - check server status';
+        } else {
+          errorMessage = error.message;
+        }
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
+      console.error('Health check failed:', {
+        message: errorMessage,
+        statusCode,
+        originalError: error
+      });
+      
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: errorMessage,
+        statusCode,
+        details: error
       };
     }
   },

@@ -1,10 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Play, RotateCcw, CheckCircle, XCircle, AlertTriangle, Clock, Info, Database, Code, Cpu, Link, FileText, RefreshCw } from 'lucide-react';
+import { 
+  ArrowLeft, Play, RotateCcw, CheckCircle, XCircle, AlertTriangle, 
+  Clock, Info, Database, Code, Cpu, Link, FileText, RefreshCw, 
+  Globe, Server, Shield, Network
+} from 'lucide-react';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import { useTestStore } from '../store/testStore';
-import { TestItem, TestLog } from '../types';
+import { TestItem, TestLog, TestStatus } from '../types';
+import { apiService } from '../services/apiService';
+import { useApiStatus } from '../hooks/useApiStatus';
 
 const TestPage: React.FC = () => {
   const navigate = useNavigate();
@@ -21,6 +27,9 @@ const TestPage: React.FC = () => {
   const [filter, setFilter] = useState<'all' | 'frontend' | 'backend' | 'database' | 'integration' | 'ocr'>('all');
   const [autoScroll, setAutoScroll] = useState(true);
   const logsEndRef = useRef<HTMLDivElement>(null);
+  
+  // Use the API status hook
+  const { status: apiStatus, error: apiError, checkNow: checkApiNow } = useApiStatus();
   
   useEffect(() => {
     if (autoScroll && logsEndRef.current && selectedTest) {
@@ -57,6 +66,21 @@ const TestPage: React.FC = () => {
   const filteredTests = filter === 'all' 
     ? tests 
     : tests.filter(t => t.category === filter);
+
+  const testBackendConnection = async () => {
+    try {
+      // Test connection to backend
+      const result = await apiService.healthCheck();
+      
+      if (result.success) {
+        alert(`Conexión exitosa al backend: ${JSON.stringify(result.data)}`);
+      } else {
+        alert(`Error al conectar con el backend: ${result.error}`);
+      }
+    } catch (error) {
+      alert(`Error al intentar conectar con el backend: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+    }
+  };
   
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
@@ -73,6 +97,88 @@ const TestPage: React.FC = () => {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Pruebas del Sistema</h1>
           <p className="text-gray-600">Verificación de componentes y funcionamiento</p>
+        </div>
+      </div>
+      
+      {/* API Connection Status */}
+      <div className="mb-6 bg-white rounded-lg shadow-sm p-4 border border-gray-200">
+        <div className="flex flex-col md:flex-row md:items-center justify-between">
+          <div className="flex items-center">
+            <Network className="h-6 w-6 text-blue-500 mr-3" />
+            <div>
+              <h2 className="text-lg font-semibold">Estado de Conexión Backend</h2>
+              <p className="text-sm text-gray-600">
+                Comprueba la conexión con el servidor backend API
+              </p>
+            </div>
+          </div>
+          
+          <div className="mt-4 md:mt-0 flex flex-wrap items-center gap-3">
+            <div className="flex items-center bg-gray-100 px-3 py-2 rounded-md">
+              <span className="text-sm font-medium mr-2">Estado:</span>
+              {apiStatus === 'checking' && (
+                <span className="flex items-center text-yellow-600">
+                  <RefreshCw className="h-4 w-4 mr-1 animate-spin" />
+                  Comprobando...
+                </span>
+              )}
+              {apiStatus === 'connected' && (
+                <span className="flex items-center text-green-600">
+                  <CheckCircle className="h-4 w-4 mr-1" />
+                  Conectado
+                </span>
+              )}
+              {apiStatus === 'failed' && (
+                <span className="flex items-center text-red-600">
+                  <XCircle className="h-4 w-4 mr-1" />
+                  Sin conexión
+                </span>
+              )}
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                icon={<RefreshCw className="h-4 w-4" />}
+                onClick={checkApiNow}
+              >
+                Comprobar
+              </Button>
+              
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={testBackendConnection}
+              >
+                Test Completo
+              </Button>
+            </div>
+          </div>
+        </div>
+        
+        {apiStatus === 'failed' && apiError && (
+          <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-700">
+            <div className="font-semibold flex items-center mb-1">
+              <AlertTriangle className="h-4 w-4 mr-1" />
+              Error de conexión:
+            </div>
+            <div className="ml-5">{apiError}</div>
+            <div className="mt-2 text-xs">
+              Verifica que el servidor backend está en ejecución y es accesible. 
+              Revisa la configuración de la variable VITE_API_URL en el archivo .env.
+            </div>
+          </div>
+        )}
+        
+        <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-md text-sm text-blue-700">
+          <div className="font-semibold flex items-center mb-1">
+            <Info className="h-4 w-4 mr-1" />
+            Información de conexión:
+          </div>
+          <div className="ml-5">
+            <div>API URL: {import.meta.env.VITE_API_URL || 'No configurada (usando /api)'}</div>
+          </div>
         </div>
       </div>
       
@@ -262,7 +368,7 @@ const TestListItem: React.FC<TestListItemProps> = ({
       case 'frontend':
         return <Code className="h-5 w-5 text-blue-500" />;
       case 'backend':
-        return <Cpu className="h-5 w-5 text-purple-500" />;
+        return <Server className="h-5 w-5 text-purple-500" />;
       case 'database':
         return <Database className="h-5 w-5 text-green-500" />;
       case 'integration':

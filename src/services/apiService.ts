@@ -29,7 +29,8 @@ api.interceptors.request.use((config) => {
       url: config.url,
       method: config.method,
       data: config.data,
-      params: config.params
+      params: config.params,
+      baseURL: config.baseURL
     });
   }
   
@@ -76,6 +77,25 @@ api.interceptors.response.use(
 
 // API service with typed methods
 export const apiService = {
+  // Health check
+  healthCheck: async () => {
+    try {
+      console.log('Sending health check request to:', API_BASE_URL + '/health');
+      const response = await api.get('/health');
+      console.log('Health check response:', response.data);
+      return {
+        success: true,
+        data: response.data
+      };
+    } catch (error) {
+      console.error('Health check failed:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  },
+  
   // Projects
   getAllProjects: async () => {
     const response = await api.get('/projects');
@@ -284,13 +304,16 @@ export const apiService = {
   // Testing Endpoint
   testConnection: async () => {
     try {
+      console.log('Testing connection to:', API_BASE_URL + '/health');
       const response = await api.get('/health');
+      console.log('Connection test response:', response.data);
       return {
         success: true,
         status: response.status,
         data: response.data
       };
     } catch (error) {
+      console.error('Connection test failed:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'

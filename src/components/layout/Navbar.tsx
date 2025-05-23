@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Home, Package, Clipboard, FileText, Menu, X, Settings, User, LogOut, ChevronDown, Info, TestTube } from 'lucide-react';
 import { useUserStore } from '../../store/userStore';
+import ApiStatusIndicator from './ApiStatusIndicator';
 
 const Navbar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -101,6 +102,11 @@ const Navbar: React.FC = () => {
               </div>
             </Link>
             
+            {/* API Status Indicator */}
+            <div className="px-3 py-2">
+              <ApiStatusIndicator />
+            </div>
+            
             {/* User profile dropdown */}
             <div className="relative ml-3">
               <div>
@@ -164,6 +170,9 @@ const Navbar: React.FC = () => {
           
           {/* Mobile menu button */}
           <div className="md:hidden flex items-center">
+            {/* API Status Indicator */}
+            <ApiStatusIndicator showLabel={false} className="mr-3" />
+            
             {/* Mobile user avatar */}
             <button
               onClick={toggleProfile}

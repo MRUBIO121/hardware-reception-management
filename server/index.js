@@ -80,7 +80,8 @@ app.use(helmet({ contentSecurityPolicy: false })); // Disable CSP for developmen
 app.use(cors({
   origin: '*', // Allow all origins
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Demo-Mode'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Demo-Mode', 'Accept', 'Origin'],
+  credentials: true
 }));
 app.use(compression());
 app.use(morgan('dev'));
@@ -102,15 +103,28 @@ app.use('/api/users', userRoutes);
 app.use('/api/uploads', uploadRoutes(upload));
 app.use('/api/utils', utilsRoutes);
 
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.status(200).json({ status: 'ok', version: '1.0.2', environment: process.env.NODE_ENV });
+// Health check endpoint - allow access to both /api/health and /health
+app.get(['/api/health', '/health'], (req, res) => {
+  res.status(200).json({ 
+    status: 'ok', 
+    version: '1.0.2', 
+    environment: process.env.NODE_ENV,
+    timestamp: new Date().toISOString()
+  });
 });
 
 // Simple Hello World for testing
-app.get('/api', (req, res) => {
-  res.json({ message: 'Welcome to DataCenter Manager API' });
+app.get(['/api', '/'], (req, res) => {
+  res.json({ 
+    message: 'Welcome to DataCenter Manager API',
+    apiVersion: '1.0.2',
+    environment: process.env.NODE_ENV,
+    serverTime: new Date().toISOString()
+  });
 });
+
+// CORS preflight
+app.options('*', cors());
 
 // Serve frontend in production
 if (process.env.NODE_ENV === 'production') {

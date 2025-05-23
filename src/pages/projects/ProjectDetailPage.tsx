@@ -16,7 +16,12 @@ import { useSettingsStore } from '../../store/settingsStore';
 const ProjectDetailPage: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
-  const { getProjectById, addOrder, updateProject, incidents } = useAppStore();
+  const { 
+    getProjectById, 
+    addOrder, 
+    updateProject, 
+    incidents
+  } = useAppStore();
   const { settings } = useSettingsStore();
   
   const [project, setProject] = useState(getProjectById(projectId || ''));
@@ -41,7 +46,7 @@ const ProjectDetailPage: React.FC = () => {
   }, [project, navigate]);
   
   useEffect(() => {
-    // Refresh project data when it changes or when refreshKey changes
+    // Refresh data when it changes or when refreshKey changes
     setProject(getProjectById(projectId || ''));
     
     // Get related incidents for this project
@@ -81,6 +86,15 @@ const ProjectDetailPage: React.FC = () => {
     }));
     
     exportExcelFile(mockProjectData, mockEquipmentList);
+  };
+  
+  // Get AI provider name for display
+  const getAIProviderDisplay = () => {
+    if (settings.ocrMethod === 'ai') {
+      return `IA (${settings.aiProvider.name})`;
+    } else {
+      return 'OCR JavaScript (Scribe.js)';
+    }
   };
   
   return (
@@ -150,7 +164,7 @@ const ProjectDetailPage: React.FC = () => {
                   <Cpu className="h-4 w-4 mr-2 text-gray-500" />
                   <span className="font-medium mr-1">Método de OCR:</span>
                   <span className="text-gray-600">
-                    {settings.ocrMethod === 'mistral' ? 'IA de Mistral' : 'OCR JavaScript (Scribe.js)'}
+                    {getAIProviderDisplay()}
                   </span>
                 </div>
               </div>

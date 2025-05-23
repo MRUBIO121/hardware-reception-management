@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { 
   Save, 
   RotateCcw, 
@@ -15,22 +14,24 @@ import {
   ToggleLeft,
   Database,
   Bug,
-  TestTube,
-  ArrowRight,
-  Key
+  Braces,
+  Key,
+  Globe,
+  Server
 } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import { useSettingsStore } from '../store/settingsStore';
 import { useUserStore } from '../store/userStore';
+import { AIProvider } from '../types';
 
 const SettingsPage: React.FC = () => {
-  const { settings, updateSettings, resetSettings, updateAIProvider } = useSettingsStore();
+  const { settings, updateSettings, updateAIProvider, resetSettings } = useSettingsStore();
   const { userGroups, users } = useUserStore();
   const [localSettings, setLocalSettings] = useState({ ...settings });
   const [saved, setSaved] = useState(false);
-  const [activeTab, setActiveTab] = useState<'general' | 'users' | 'auth' | 'automations' | 'backend'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'users' | 'auth' | 'automations' | 'backend' | 'ai'>('general');
   
   const handleSave = () => {
     updateSettings(localSettings);
@@ -49,34 +50,30 @@ const SettingsPage: React.FC = () => {
     }
   };
 
-  const handleAIProviderChange = (value: 'OpenAI' | 'AzureOpenAI' | 'MistralAI') => {
-    // Set default model based on provider
-    let model = '';
-    let endpoint = '';
-    let version = '';
-
-    switch (value) {
-      case 'OpenAI':
-        model = 'gpt-4-vision-preview';
-        break;
-      case 'AzureOpenAI':
-        model = 'gpt-4-vision';
-        endpoint = 'https://your-resource-name.openai.azure.com';
-        version = '2023-12-01-preview';
-        break;
-      case 'MistralAI':
-        model = 'mistral-large-latest';
-        break;
-    }
-
+  const handleAIProviderChange = (name: 'OpenAI' | 'AzureOpenAI' | 'MistralAI') => {
+    const newAIProvider: AIProvider = {
+      ...localSettings.aiProvider,
+      name,
+      // Set default model based on provider
+      model: name === 'OpenAI' 
+        ? 'gpt-4-vision-preview'
+        : name === 'AzureOpenAI'
+          ? 'gpt-4-vision'
+          : 'mistral-large-latest'
+    };
+    
+    setLocalSettings({
+      ...localSettings,
+      aiProvider: newAIProvider
+    });
+  };
+  
+  const handleAIProviderFieldChange = (field: keyof AIProvider, value: string) => {
     setLocalSettings({
       ...localSettings,
       aiProvider: {
         ...localSettings.aiProvider,
-        name: value,
-        model,
-        endpoint,
-        version
+        [field]: value
       }
     });
   };
@@ -101,6 +98,16 @@ const SettingsPage: React.FC = () => {
               >
                 <Cpu className="h-5 w-5 mr-2" />
                 <span>General</span>
+              </button>
+              
+              <button
+                className={`px-4 py-3 text-left flex items-center ${activeTab === 'ai' 
+                  ? 'bg-red-50 text-red-700 border-l-4 border-red-500' 
+                  : 'hover:bg-gray-50 text-gray-700'}`}
+                onClick={() => setActiveTab('ai')}
+              >
+                <Braces className="h-5 w-5 mr-2" />
+                <span>IA & OCR</span>
               </button>
               
               <button
@@ -142,16 +149,6 @@ const SettingsPage: React.FC = () => {
                 <Database className="h-5 w-5 mr-2" />
                 <span>Backend</span>
               </button>
-
-              {/* Test System Link */}
-              <Link
-                to="/test"
-                className="px-4 py-3 text-left flex items-center text-gray-700 hover:bg-gray-50"
-              >
-                <TestTube className="h-5 w-5 mr-2" />
-                <span>Tests del Sistema</span>
-                <ArrowRight className="h-4 w-4 ml-auto" />
-              </Link>
             </nav>
           </div>
         </div>
@@ -161,111 +158,198 @@ const SettingsPage: React.FC = () => {
           <div className="space-y-6">
             {/* General Settings */}
             {activeTab === 'general' && (
-              <>
-                {/* AI Provider Configuration */}
-                <Card className="border border-gray-200">
-                  <div className="p-4">
-                    <h2 className="text-xl font-semibold mb-4">Configuración del Proveedor de IA</h2>
-                    
-                    <div className="space-y-6">
-                      <div>
-                        <h3 className="text-md font-medium mb-3">Seleccionar Proveedor de IA</h3>
-                        <p className="text-sm text-gray-600 mb-3">
-                          Elige el proveedor de servicios de IA para procesamiento de documentos y análisis.
-                        </p>
+              <Card className="border border-gray-200">
+                <div className="p-4">
+                  <h2 className="text-xl font-semibold mb-4">Procesamiento de Documentos</h2>
+                  
+                  <div className="space-y-6">
+                    {/* Excel Parser Method */}
+                    <div>
+                      <h3 className="text-md font-medium mb-3">Método de Análisis de Excel</h3>
+                      <p className="text-sm text-gray-600 mb-3">
+                        Selecciona el método preferido para analizar archivos Excel cuando creas proyectos o importas datos.
+                      </p>
+                      
+                      <div className="space-y-2">
+                        <div 
+                          className={`p-4 border rounded-lg cursor-pointer ${localSettings.excelParserMethod === 'javascript' ? 'border-red-500 bg-red-50' : 'border-gray-200 hover:bg-gray-50'}`}
+                          onClick={() => setLocalSettings({ ...localSettings, excelParserMethod: 'javascript' })}
+                        >
+                          <div className="flex items-center">
+                            <div className={`w-4 h-4 rounded-full mr-2 ${localSettings.excelParserMethod === 'javascript' ? 'bg-red-500' : 'border border-gray-400'}`}></div>
+                            <div>
+                              <div className="flex items-center">
+                                <FileText className="h-5 w-5 text-gray-700 mr-2" />
+                                <h4 className="font-medium">JavaScript (XLSX)</h4>
+                              </div>
+                              <p className="text-sm text-gray-600 mt-1">
+                                Analiza archivos Excel utilizando JavaScript. Más rápido y funciona sin conexión a internet.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
                         
-                        <div className="space-y-2">
-                          <div 
-                            className={`p-4 border rounded-lg cursor-pointer ${
-                              localSettings.aiProvider.name === 'OpenAI' ? 'border-red-500 bg-red-50' : 'border-gray-200 hover:bg-gray-50'
-                            }`}
-                            onClick={() => handleAIProviderChange('OpenAI')}
-                          >
-                            <div className="flex items-center">
-                              <div className={`w-4 h-4 rounded-full mr-2 ${
-                                localSettings.aiProvider.name === 'OpenAI' ? 'bg-red-500' : 'border border-gray-400'
-                              }`}></div>
-                              <div>
-                                <div className="flex items-center">
-                                  <Cpu className="h-5 w-5 text-gray-700 mr-2" />
-                                  <h4 className="font-medium">OpenAI</h4>
-                                </div>
-                                <p className="text-sm text-gray-600 mt-1">
-                                  Utiliza modelos de OpenAI como GPT-4 Vision para análisis de documentos.
-                                </p>
+                        <div 
+                          className={`p-4 border rounded-lg cursor-pointer ${localSettings.excelParserMethod === 'ai' ? 'border-red-500 bg-red-50' : 'border-gray-200 hover:bg-gray-50'}`}
+                          onClick={() => setLocalSettings({ ...localSettings, excelParserMethod: 'ai' })}
+                        >
+                          <div className="flex items-center">
+                            <div className={`w-4 h-4 rounded-full mr-2 ${localSettings.excelParserMethod === 'ai' ? 'bg-red-500' : 'border border-gray-400'}`}></div>
+                            <div>
+                              <div className="flex items-center">
+                                <Cpu className="h-5 w-5 text-gray-700 mr-2" />
+                                <h4 className="font-medium">Inteligencia Artificial</h4>
                               </div>
-                            </div>
-                          </div>
-                          
-                          <div 
-                            className={`p-4 border rounded-lg cursor-pointer ${
-                              localSettings.aiProvider.name === 'AzureOpenAI' ? 'border-red-500 bg-red-50' : 'border-gray-200 hover:bg-gray-50'
-                            }`}
-                            onClick={() => handleAIProviderChange('AzureOpenAI')}
-                          >
-                            <div className="flex items-center">
-                              <div className={`w-4 h-4 rounded-full mr-2 ${
-                                localSettings.aiProvider.name === 'AzureOpenAI' ? 'bg-red-500' : 'border border-gray-400'
-                              }`}></div>
-                              <div>
-                                <div className="flex items-center">
-                                  <Cpu className="h-5 w-5 text-gray-700 mr-2" />
-                                  <h4 className="font-medium">Azure OpenAI</h4>
-                                </div>
-                                <p className="text-sm text-gray-600 mt-1">
-                                  Utiliza los modelos de OpenAI a través de Azure para mayor seguridad y cumplimiento empresarial.
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div 
-                            className={`p-4 border rounded-lg cursor-pointer ${
-                              localSettings.aiProvider.name === 'MistralAI' ? 'border-red-500 bg-red-50' : 'border-gray-200 hover:bg-gray-50'
-                            }`}
-                            onClick={() => handleAIProviderChange('MistralAI')}
-                          >
-                            <div className="flex items-center">
-                              <div className={`w-4 h-4 rounded-full mr-2 ${
-                                localSettings.aiProvider.name === 'MistralAI' ? 'bg-red-500' : 'border border-gray-400'
-                              }`}></div>
-                              <div>
-                                <div className="flex items-center">
-                                  <Cpu className="h-5 w-5 text-gray-700 mr-2" />
-                                  <h4 className="font-medium">Mistral AI</h4>
-                                </div>
-                                <p className="text-sm text-gray-600 mt-1">
-                                  Utiliza los modelos de Mistral AI para análisis de documentos y procesamiento de lenguaje.
-                                </p>
-                              </div>
+                              <p className="text-sm text-gray-600 mt-1">
+                                Utiliza inteligencia artificial para analizar los contenidos de archivos Excel. Más preciso pero requiere conexión a internet.
+                              </p>
                             </div>
                           </div>
                         </div>
                       </div>
+                    </div>
+                    
+                    {/* OCR Method */}
+                    <div>
+                      <h3 className="text-md font-medium mb-3">Método de OCR para Albaranes</h3>
+                      <p className="text-sm text-gray-600 mb-3">
+                        Selecciona el método predeterminado para análisis OCR de albaranes. Esta configuración se aplicará a todos los proyectos.
+                      </p>
                       
-                      {/* AI Model and API Key Configuration */}
-                      <div className="space-y-4 p-4 border rounded-lg">
-                        <h3 className="text-md font-medium mb-3">Configuración del Modelo de IA</h3>
+                      <div className="space-y-2">
+                        <div 
+                          className={`p-4 border rounded-lg cursor-pointer ${localSettings.ocrMethod === 'scribe' ? 'border-red-500 bg-red-50' : 'border-gray-200 hover:bg-gray-50'}`}
+                          onClick={() => setLocalSettings({ ...localSettings, ocrMethod: 'scribe' })}
+                        >
+                          <div className="flex items-center">
+                            <div className={`w-4 h-4 rounded-full mr-2 ${localSettings.ocrMethod === 'scribe' ? 'bg-red-500' : 'border border-gray-400'}`}></div>
+                            <div>
+                              <div className="flex items-center">
+                                <File className="h-5 w-5 text-gray-700 mr-2" />
+                                <h4 className="font-medium">OCR JavaScript</h4>
+                              </div>
+                              <p className="text-sm text-gray-600 mt-1">
+                                Procesamiento local de OCR utilizando Tesseract.js. Funciona sin conexión a internet.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
                         
+                        <div 
+                          className={`p-4 border rounded-lg cursor-pointer ${localSettings.ocrMethod === 'ai' ? 'border-red-500 bg-red-50' : 'border-gray-200 hover:bg-gray-50'}`}
+                          onClick={() => setLocalSettings({ ...localSettings, ocrMethod: 'ai' })}
+                        >
+                          <div className="flex items-center">
+                            <div className={`w-4 h-4 rounded-full mr-2 ${localSettings.ocrMethod === 'ai' ? 'bg-red-500' : 'border border-gray-400'}`}></div>
+                            <div>
+                              <div className="flex items-center">
+                                <Cpu className="h-5 w-5 text-gray-700 mr-2" />
+                                <h4 className="font-medium">Inteligencia Artificial</h4>
+                              </div>
+                              <p className="text-sm text-gray-600 mt-1">
+                                Utiliza inteligencia artificial para analizar documentos y extraer información. Mayor precisión pero requiere conexión a internet.
+                              </p>
+                              <p className="text-xs text-gray-500 mt-1">
+                                Proveedor actual: {localSettings.aiProvider?.name || 'No configurado'}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            )}
+
+            {/* AI Provider Settings */}
+            {activeTab === 'ai' && (
+              <Card className="border border-gray-200">
+                <div className="p-4">
+                  <h2 className="text-xl font-semibold mb-4">Configuración de Proveedores de IA</h2>
+                  
+                  <div className="space-y-6">
+                    <div>
+                      <h3 className="text-md font-medium mb-3">Proveedor de IA</h3>
+                      <p className="text-sm text-gray-600 mb-3">
+                        Selecciona el proveedor de IA que deseas utilizar para análisis de documentos y OCR.
+                      </p>
+                      
+                      <div className="space-y-2">
+                        <div 
+                          className={`p-4 border rounded-lg cursor-pointer ${localSettings.aiProvider.name === 'MistralAI' ? 'border-red-500 bg-red-50' : 'border-gray-200 hover:bg-gray-50'}`}
+                          onClick={() => handleAIProviderChange('MistralAI')}
+                        >
+                          <div className="flex items-center">
+                            <div className={`w-4 h-4 rounded-full mr-2 ${localSettings.aiProvider.name === 'MistralAI' ? 'bg-red-500' : 'border border-gray-400'}`}></div>
+                            <div>
+                              <div className="flex items-center">
+                                <Braces className="h-5 w-5 text-gray-700 mr-2" />
+                                <h4 className="font-medium">Mistral AI</h4>
+                              </div>
+                              <p className="text-sm text-gray-600 mt-1">
+                                Modelos avanzados de IA multimodal para procesamiento de texto e imágenes.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div 
+                          className={`p-4 border rounded-lg cursor-pointer ${localSettings.aiProvider.name === 'OpenAI' ? 'border-red-500 bg-red-50' : 'border-gray-200 hover:bg-gray-50'}`}
+                          onClick={() => handleAIProviderChange('OpenAI')}
+                        >
+                          <div className="flex items-center">
+                            <div className={`w-4 h-4 rounded-full mr-2 ${localSettings.aiProvider.name === 'OpenAI' ? 'bg-red-500' : 'border border-gray-400'}`}></div>
+                            <div>
+                              <div className="flex items-center">
+                                <Cpu className="h-5 w-5 text-gray-700 mr-2" />
+                                <h4 className="font-medium">OpenAI</h4>
+                              </div>
+                              <p className="text-sm text-gray-600 mt-1">
+                                Modelos GPT de OpenAI con capacidad de visión para análisis de imágenes y documentos.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div 
+                          className={`p-4 border rounded-lg cursor-pointer ${localSettings.aiProvider.name === 'AzureOpenAI' ? 'border-red-500 bg-red-50' : 'border-gray-200 hover:bg-gray-50'}`}
+                          onClick={() => handleAIProviderChange('AzureOpenAI')}
+                        >
+                          <div className="flex items-center">
+                            <div className={`w-4 h-4 rounded-full mr-2 ${localSettings.aiProvider.name === 'AzureOpenAI' ? 'bg-red-500' : 'border border-gray-400'}`}></div>
+                            <div>
+                              <div className="flex items-center">
+                                <Server className="h-5 w-5 text-gray-700 mr-2" />
+                                <h4 className="font-medium">Azure OpenAI</h4>
+                              </div>
+                              <p className="text-sm text-gray-600 mt-1">
+                                Modelos de OpenAI alojados en Azure, ideales para empresas con requisitos de cumplimiento.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* AI Provider Configuration */}
+                    <div className="mt-6">
+                      <h3 className="text-md font-medium mb-3">Configuración de {localSettings.aiProvider.name}</h3>
+                      <div className="space-y-4 p-4 border rounded-lg">
                         <Input
-                          label="Clave API"
-                          type="password"
+                          label="API Key"
                           value={localSettings.aiProvider.apiKey}
-                          onChange={(e) => setLocalSettings({
-                            ...localSettings,
-                            aiProvider: { ...localSettings.aiProvider, apiKey: e.target.value }
-                          })}
+                          onChange={(e) => handleAIProviderFieldChange('apiKey', e.target.value)}
                           icon={<Key className="h-5 w-5 text-gray-400" />}
+                          type="password"
                           fullWidth
                         />
                         
                         <Input
                           label="Modelo"
                           value={localSettings.aiProvider.model}
-                          onChange={(e) => setLocalSettings({
-                            ...localSettings,
-                            aiProvider: { ...localSettings.aiProvider, model: e.target.value }
-                          })}
+                          onChange={(e) => handleAIProviderFieldChange('model', e.target.value)}
+                          icon={<Cpu className="h-5 w-5 text-gray-400" />}
                           fullWidth
                         />
                         
@@ -274,160 +358,64 @@ const SettingsPage: React.FC = () => {
                             <Input
                               label="Endpoint"
                               value={localSettings.aiProvider.endpoint || ''}
+                              onChange={(e) => handleAIProviderFieldChange('endpoint', e.target.value)}
+                              icon={<Globe className="h-5 w-5 text-gray-400" />}
                               placeholder="https://your-resource-name.openai.azure.com"
-                              onChange={(e) => setLocalSettings({
-                                ...localSettings,
-                                aiProvider: { ...localSettings.aiProvider, endpoint: e.target.value }
-                              })}
                               fullWidth
                             />
                             
                             <Input
-                              label="Versión de la API"
+                              label="Version API"
                               value={localSettings.aiProvider.version || ''}
-                              placeholder="2023-12-01-preview"
-                              onChange={(e) => setLocalSettings({
-                                ...localSettings,
-                                aiProvider: { ...localSettings.aiProvider, version: e.target.value }
-                              })}
+                              onChange={(e) => handleAIProviderFieldChange('version', e.target.value)}
+                              icon={<FileText className="h-5 w-5 text-gray-400" />}
+                              placeholder="2023-05-15"
                               fullWidth
                             />
                           </>
                         )}
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-                
-                <Card className="border border-gray-200">
-                  <div className="p-4">
-                    <h2 className="text-xl font-semibold mb-4">Procesamiento de Documentos</h2>
-                    
-                    <div className="space-y-6">
-                      {/* Excel Parser Method */}
-                      <div>
-                        <h3 className="text-md font-medium mb-3">Método de Análisis de Excel</h3>
-                        <p className="text-sm text-gray-600 mb-3">
-                          Selecciona el método preferido para analizar archivos Excel cuando creas proyectos o importas datos.
-                        </p>
                         
-                        <div className="space-y-2">
-                          <div 
-                            className={`p-4 border rounded-lg cursor-pointer ${localSettings.excelParserMethod === 'javascript' ? 'border-red-500 bg-red-50' : 'border-gray-200 hover:bg-gray-50'}`}
-                            onClick={() => setLocalSettings({ ...localSettings, excelParserMethod: 'javascript' })}
-                          >
-                            <div className="flex items-center">
-                              <div className={`w-4 h-4 rounded-full mr-2 ${localSettings.excelParserMethod === 'javascript' ? 'bg-red-500' : 'border border-gray-400'}`}></div>
-                              <div>
-                                <div className="flex items-center">
-                                  <FileText className="h-5 w-5 text-gray-700 mr-2" />
-                                  <h4 className="font-medium">JavaScript (XLSX)</h4>
-                                </div>
-                                <p className="text-sm text-gray-600 mt-1">
-                                  Analiza archivos Excel utilizando JavaScript. Más rápido y funciona sin conexión a internet.
-                                </p>
-                              </div>
-                            </div>
+                        {localSettings.aiProvider.name === 'MistralAI' && (
+                          <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded-md">
+                            <p>
+                              Para usar Mistral AI, necesitas una API key. Puedes obtener una en 
+                              <a href="https://console.mistral.ai" target="_blank" rel="noopener noreferrer" className="text-red-600 hover:text-red-800"> console.mistral.ai</a>
+                            </p>
+                            <p className="mt-2">
+                              Modelo recomendado: <code>mistral-large-latest</code>
+                            </p>
                           </div>
-                          
-                          <div 
-                            className={`p-4 border rounded-lg cursor-pointer ${localSettings.excelParserMethod === 'ai' ? 'border-red-500 bg-red-50' : 'border-gray-200 hover:bg-gray-50'}`}
-                            onClick={() => setLocalSettings({ ...localSettings, excelParserMethod: 'ai' })}
-                          >
-                            <div className="flex items-center">
-                              <div className={`w-4 h-4 rounded-full mr-2 ${localSettings.excelParserMethod === 'ai' ? 'bg-red-500' : 'border border-gray-400'}`}></div>
-                              <div>
-                                <div className="flex items-center">
-                                  <Cpu className="h-5 w-5 text-gray-700 mr-2" />
-                                  <h4 className="font-medium">Inteligencia Artificial</h4>
-                                </div>
-                                <p className="text-sm text-gray-600 mt-1">
-                                  Utiliza inteligencia artificial para analizar los contenidos de archivos Excel. Más preciso pero requiere conexión a internet.
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {/* OCR Method */}
-                      <div>
-                        <h3 className="text-md font-medium mb-3">Método de OCR para Albaranes</h3>
-                        <p className="text-sm text-gray-600 mb-3">
-                          Selecciona el método predeterminado para análisis OCR de albaranes. Esta configuración se aplicará a todos los proyectos.
-                        </p>
+                        )}
                         
-                        <div className="space-y-2">
-                          <div 
-                            className={`p-4 border rounded-lg cursor-pointer ${localSettings.ocrMethod === 'scribe' ? 'border-red-500 bg-red-50' : 'border-gray-200 hover:bg-gray-50'}`}
-                            onClick={() => setLocalSettings({ ...localSettings, ocrMethod: 'scribe' })}
+                        {localSettings.aiProvider.name === 'OpenAI' && (
+                          <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded-md">
+                            <p>
+                              Para usar OpenAI, necesitas una API key. Puedes obtener una en 
+                              <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-red-600 hover:text-red-800"> platform.openai.com/api-keys</a>
+                            </p>
+                            <p className="mt-2">
+                              Modelo recomendado: <code>gpt-4-vision-preview</code> o <code>gpt-4o</code>
+                            </p>
+                          </div>
+                        )}
+                        
+                        <div className="mt-4">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              // Test the API connection
+                              alert('Esta funcionalidad será implementada próximamente');
+                            }}
                           >
-                            <div className="flex items-center">
-                              <div className={`w-4 h-4 rounded-full mr-2 ${localSettings.ocrMethod === 'scribe' ? 'bg-red-500' : 'border border-gray-400'}`}></div>
-                              <div>
-                                <div className="flex items-center">
-                                  <File className="h-5 w-5 text-gray-700 mr-2" />
-                                  <h4 className="font-medium">OCR JavaScript</h4>
-                                </div>
-                                <p className="text-sm text-gray-600 mt-1">
-                                  Procesamiento local de OCR utilizando Tesseract.js. Funciona sin conexión a internet.
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div 
-                            className={`p-4 border rounded-lg cursor-pointer ${localSettings.ocrMethod === 'ai' ? 'border-red-500 bg-red-50' : 'border-gray-200 hover:bg-gray-50'}`}
-                            onClick={() => setLocalSettings({ ...localSettings, ocrMethod: 'ai' })}
-                          >
-                            <div className="flex items-center">
-                              <div className={`w-4 h-4 rounded-full mr-2 ${localSettings.ocrMethod === 'ai' ? 'bg-red-500' : 'border border-gray-400'}`}></div>
-                              <div>
-                                <div className="flex items-center">
-                                  <Cpu className="h-5 w-5 text-gray-700 mr-2" />
-                                  <h4 className="font-medium">Inteligencia Artificial</h4>
-                                </div>
-                                <p className="text-sm text-gray-600 mt-1">
-                                  Utiliza inteligencia artificial para analizar documentos y extraer información. Mayor precisión pero requiere conexión a internet.
-                                </p>
-                                <p className="text-xs text-gray-500 mt-1">
-                                  Proveedor actual: {localSettings.aiProvider.name}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Test System Banner */}
-                    <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 mt-6">
-                      <div className="flex items-start">
-                        <div className="flex-shrink-0 mt-0.5">
-                          <TestTube className="h-6 w-6 text-indigo-600" />
-                        </div>
-                        <div className="ml-3">
-                          <h3 className="text-sm font-medium text-indigo-800">Sistema de Pruebas</h3>
-                          <p className="mt-2 text-sm text-indigo-700">
-                            Comprueba que todos los componentes del sistema funcionen correctamente utilizando nuestro sistema de pruebas integrado.
-                          </p>
-                          <div className="mt-3">
-                            <Link to="/test">
-                              <Button
-                                variant="primary"
-                                className="bg-indigo-700 hover:bg-indigo-800"
-                                icon={<TestTube className="h-4 w-4" />}
-                              >
-                                Ir a Pruebas del Sistema
-                              </Button>
-                            </Link>
-                          </div>
+                            Probar Conexión
+                          </Button>
                         </div>
                       </div>
                     </div>
                   </div>
-                </Card>
-              </>
+                </div>
+              </Card>
             )}
             
             {/* Users and Groups */}
@@ -907,32 +895,6 @@ const SettingsPage: React.FC = () => {
                         >
                           Ver Logs
                         </Button>
-                      </div>
-                    </div>
-
-                    {/* Test System Banner */}
-                    <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
-                      <div className="flex items-start">
-                        <div className="flex-shrink-0 mt-0.5">
-                          <TestTube className="h-6 w-6 text-indigo-600" />
-                        </div>
-                        <div className="ml-3">
-                          <h3 className="text-sm font-medium text-indigo-800">Sistema de Pruebas</h3>
-                          <p className="mt-2 text-sm text-indigo-700">
-                            Verifica el estado de todos los componentes del sistema mediante pruebas automatizadas.
-                          </p>
-                          <div className="mt-3">
-                            <Link to="/test">
-                              <Button
-                                variant="primary"
-                                className="bg-indigo-700 hover:bg-indigo-800"
-                                icon={<TestTube className="h-4 w-4" />}
-                              >
-                                Ir a Pruebas del Sistema
-                              </Button>
-                            </Link>
-                          </div>
-                        </div>
                       </div>
                     </div>
                   </div>

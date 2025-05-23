@@ -10,7 +10,7 @@ import DeliveryNoteForm from '../../components/deliveryNote/DeliveryNoteForm';
 import IncidentsList from '../../components/incident/IncidentsList';
 import { useAppStore } from '../../store';
 import { fileToBase64 } from '../../services/fileService';
-import { analyzePdfWithMistral, analyzeExcelWithMistral, analyzeImageWithMistral } from '../../services/mistralService';
+import { analyzeDocumentWithAI } from '../../services/aiService';
 import { analyzeDocumentWithScribe } from '../../services/ocrService';
 import { getMistralAIPrompt, getIncidentsByOrderId } from '../../utils/helpers';
 import { useSettingsStore } from '../../store/settingsStore';
@@ -87,17 +87,10 @@ const OrderDetailPage: React.FC = () => {
         let equipments = [];
         
         // Use the OCR method from settings
-        if (settings.ocrMethod === 'mistral') {
-          // Use Mistral AI for OCR
+        if (settings.ocrMethod === 'ai') {
+          // Use AI for OCR
           const prompt = getMistralAIPrompt();
-          
-          if (attachmentType === 'pdf') {
-            equipments = await analyzePdfWithMistral(fileBase64, prompt);
-          } else if (attachmentType === 'excel') {
-            equipments = await analyzeExcelWithMistral(fileBase64, prompt);
-          } else if (attachmentType === 'image') {
-            equipments = await analyzeImageWithMistral(fileBase64, prompt);
-          }
+          equipments = await analyzeDocumentWithAI(fileBase64, file.type, prompt);
         } else {
           // Use Scribe.js for OCR (pure JavaScript)
           equipments = await analyzeDocumentWithScribe(fileBase64, file.type);
@@ -170,7 +163,9 @@ const OrderDetailPage: React.FC = () => {
                 <FileText className="h-4 w-4 mr-2 text-gray-500" />
                 <span className="font-medium mr-1">Método de OCR:</span>
                 <span className="text-gray-600">
-                  {settings.ocrMethod === 'mistral' ? 'IA de Mistral' : 'OCR JavaScript (Scribe.js)'}
+                  {settings.ocrMethod === 'ai' 
+                    ? `IA (${settings.aiProvider.name})` 
+                    : 'OCR JavaScript (Scribe.js)'}
                 </span>
               </div>
             </div>

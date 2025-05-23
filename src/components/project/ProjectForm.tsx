@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import Input from '../ui/Input';
 import Select from '../ui/Select';
@@ -41,10 +41,9 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ onSubmit, isLoading = false }
     }
   });
   
-  const [excelFile, setExcelFile] = React.useState<File | null>(null);
-  const [equipmentList, setEquipmentList] = React.useState<any[]>([]);
-  const [previewCode, setPreviewCode] = React.useState<string>('');
-  const [parsingMethod, setParsingMethod] = React.useState<string>(settings.excelParserMethod);
+  const [excelFile, setExcelFile] = useState<File | null>(null);
+  const [equipmentList, setEquipmentList] = useState<any[]>([]);
+  const [previewCode, setPreviewCode] = useState<string>('');
   
   const datacenterValue = watch('datacenter');
   const clientValue = watch('client');
@@ -101,7 +100,8 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ onSubmit, isLoading = false }
       projectCode,
       status: 'Pendiente',
       estimatedEquipment: equipmentList.reduce((total, item) => total + item.quantity, 0),
-      excelPath: excelFile.name
+      excelPath: excelFile.name,
+      ocrMethod: settings.ocrMethod
     };
     
     onSubmit(projectData, equipmentList);
@@ -177,10 +177,10 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ onSubmit, isLoading = false }
             <Select
               options={[
                 { value: 'javascript', label: 'JavaScript' },
-                { value: 'mistral', label: 'IA de Mistral' }
+                { value: 'ai', label: 'Inteligencia Artificial' }
               ]}
-              value={parsingMethod}
-              onChange={(e) => setParsingMethod(e.target.value)}
+              value={settings.excelParserMethod}
+              onChange={(e) => useSettingsStore.getState().updateSettings({ excelParserMethod: e.target.value as 'javascript' | 'ai' })}
               className="text-xs py-0 h-6 pr-7 min-h-0"
             />
           </div>

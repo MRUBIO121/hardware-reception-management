@@ -77,7 +77,11 @@ const upload = multer({
 
 // Middleware setup
 app.use(helmet({ contentSecurityPolicy: false })); // Disable CSP for development
-app.use(cors());
+app.use(cors({
+  origin: '*', // Allow all origins for development
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Demo-Mode'],
+}));
 app.use(compression());
 app.use(morgan('dev'));
 app.use(express.json());
@@ -126,6 +130,7 @@ app.use(errorHandler);
 app.listen(PORT, IP_ADDRESS, () => {
   logger.info(`Server running on port ${PORT} and IP ${IP_ADDRESS}`);
   console.log(`Server running on port ${PORT} and IP ${IP_ADDRESS}`);
+  console.log(`API accessible at http://localhost:${PORT}/api`);
 });
 
 export default app;

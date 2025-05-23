@@ -3,8 +3,8 @@ module.exports = {
     {
       name: 'datacenter-api',
       script: 'server/index.js',
-      exec_mode: 'cluster',       // Changed from 'fork' to 'cluster'
-      instances: 'max',            // Changed from 1 to 'max'
+      exec_mode: 'cluster',
+      instances: 'max',
       autorestart: true,
       watch: false,
       max_memory_restart: '1G',

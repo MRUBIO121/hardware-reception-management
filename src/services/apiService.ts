@@ -3,6 +3,7 @@ import { useSettingsStore } from '../store/settingsStore';
 
 // Get API base URL from environment variables
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+console.log('API Service initialized with base URL:', API_BASE_URL);
 
 // Create axios instance
 const api = axios.create({
@@ -278,5 +279,22 @@ export const apiService = {
     });
     
     return handleResponse(response);
+  },
+
+  // Testing Endpoint
+  testConnection: async () => {
+    try {
+      const response = await api.get('/health');
+      return {
+        success: true,
+        status: response.status,
+        data: response.data
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
   }
 };

@@ -6,6 +6,10 @@ export default defineConfig(({ mode }) => {
   // Load env variables
   const env = loadEnv(mode, process.cwd());
   
+  // Get API URL from environment or use default
+  const apiUrl = env.VITE_API_URL || 'http://localhost:3002/api';
+  console.log(`Using API URL: ${apiUrl}`);
+  
   return {
     plugins: [react()],
     optimizeDeps: {
@@ -14,7 +18,7 @@ export default defineConfig(({ mode }) => {
     server: {
       proxy: {
         '/api': {
-          target: env.VITE_API_URL || 'http://localhost:3002',
+          target: apiUrl.endsWith('/api') ? apiUrl.substring(0, apiUrl.length - 4) : apiUrl,
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api/, ''),
         }

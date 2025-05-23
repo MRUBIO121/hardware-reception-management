@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { TestItem, TestLog, TestStatus } from '../types';
 import { generateUniqueId } from '../utils/helpers';
 import { useSettingsStore } from '../store/settingsStore';
+import { apiService } from '../services/apiService';
 
 interface TestState {
   tests: TestItem[];
@@ -17,6 +18,16 @@ interface TestState {
 
 // Define initial set of tests
 const initialTests: TestItem[] = [
+  // Backend API test - will be executed directly
+  {
+    id: 'be-connection',
+    name: 'Conexión a API',
+    description: 'Verifica la conexión al backend API',
+    status: 'idle',
+    progress: 0,
+    logs: [],
+    category: 'backend',
+  },
   // Frontend tests
   {
     id: 'fe-components',
@@ -229,8 +240,12 @@ export const useTestStore = create<TestState>((set, get) => ({
     addLog(testId, `Iniciando prueba: ${test.name}`, 'info');
     
     try {
+      // Special handling for API connection test
+      if (testId === 'be-connection') {
+        await testAPIConnection(testId, { addLog, updateTestProgress });
+      }
       // Start the test based on its category and ID
-      switch (test.id) {
+      else switch (test.id) {
         case 'fe-components':
           await testComponents(testId, { addLog, updateTestProgress });
           break;
@@ -320,11 +335,17 @@ export const useTestStore = create<TestState>((set, get) => ({
   runAllTests: async () => {
     const { tests, runTest } = get();
     
-    // Group tests by category to run in a specific order
+    // Run API connection test first
+    const apiTest = tests.find(t => t.id === 'be-connection');
+    if (apiTest) {
+      await runTest(apiTest.id);
+    }
+    
+    // Group remaining tests by category to run in a specific order
     const categories = ['frontend', 'backend', 'database', 'integration', 'ocr'];
     
     for (const category of categories) {
-      const categoryTests = tests.filter(t => t.category === category);
+      const categoryTests = tests.filter(t => t.category === category && t.id !== 'be-connection');
       
       // Run tests in this category concurrently
       await Promise.all(categoryTests.map(test => runTest(test.id)));
@@ -354,6 +375,63 @@ export const useTestStore = create<TestState>((set, get) => ({
     }));
   }
 }));
+
+// Direct API connection test (with actual API call)
+async function testAPIConnection(
+  testId: string, 
+  { addLog, updateTestProgress }: { addLog: (testId: string, message: string, type: 'info' | 'error' | 'success' | 'warning') => void, updateTestProgress: (testId: string, progress: number) => void }
+) {
+  const apiUrl = import.meta.env.VITE_API_URL || '/api';
+  addLog(testId, `Verificando conexión al backend API: ${apiUrl}`, 'info');
+  updateTestProgress(testId, 20);
+
+  try {
+    // First try to determine the real API URL being used
+    addLog(testId, 'Obteniendo configuración de conexión...', 'info');
+    const { demoMode } = useSettingsStore.getState().settings;
+    
+    updateTestProgress(testId, 40);
+    
+    // If demo mode is enabled, note it
+    if (demoMode) {
+      addLog(testId, 'El modo demo está activado. Las llamadas API pueden ser simuladas.', 'warning');
+    }
+    
+    addLog(testId, 'Enviando petición de prueba al backend...', 'info');
+    
+    // Attempt a real connection to the backend
+    const result = await apiService.healthCheck();
+    
+    updateTestProgress(testId, 70);
+    
+    if (result.success) {
+      addLog(testId, `Conexión exitosa. Respuesta: ${JSON.stringify(result.data)}`, 'success');
+      updateTestProgress(testId, 100);
+    } else {
+      // Special handling if demo mode is enabled
+      if (demoMode) {
+        addLog(testId, `Error de conexión pero el modo demo está activado. La app seguirá funcionando.`, 'warning');
+        addLog(testId, `Error: ${result.error}`, 'warning');
+        updateTestProgress(testId, 100);
+        return; // Exit without throwing to avoid marking as failed
+      } else {
+        addLog(testId, `Error de conexión: ${result.error}`, 'error');
+        throw new Error(`No se pudo conectar al backend: ${result.error}`);
+      }
+    }
+  } catch (error) {
+    addLog(testId, `Error inesperado: ${error instanceof Error ? error.message : String(error)}`, 'error');
+    
+    // Special handling for demo mode
+    if (useSettingsStore.getState().settings.demoMode) {
+      addLog(testId, `El modo demo está activado. La app seguirá funcionando con datos de muestra.`, 'warning');
+      updateTestProgress(testId, 100);
+      return; // Exit without re-throwing to avoid marking as failed
+    }
+    
+    throw error;
+  }
+}
 
 // Test implementation functions
 async function testComponents(
@@ -793,7 +871,6 @@ async function testAuthFlow(
   testId: string, 
   { addLog, updateTestProgress }: { addLog: (testId: string, message: string, type: 'info' | 'error' | 'success' | 'warning') => void, updateTestProgress: (testId: string, progress: number) => void }
 ) {
-  const { settings } = useSettingsStore.getState();
   addLog(testId, 'Verificando flujo de autenticación...', 'info');
   updateTestProgress(testId, 10);
   

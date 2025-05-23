@@ -78,7 +78,7 @@ const upload = multer({
 // Middleware setup
 app.use(helmet({ contentSecurityPolicy: false })); // Disable CSP for development
 app.use(cors({
-  origin: '*', // Allow all origins for development
+  origin: '*', // Allow all origins
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Demo-Mode'],
 }));

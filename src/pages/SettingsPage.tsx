@@ -17,7 +17,9 @@ import {
   Braces,
   Key,
   Globe,
-  Server
+  Server,
+  TestTube,
+  Link
 } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
@@ -25,6 +27,7 @@ import Input from '../components/ui/Input';
 import { useSettingsStore } from '../store/settingsStore';
 import { useUserStore } from '../store/userStore';
 import { AIProvider } from '../types';
+import { useNavigate } from 'react-router-dom';
 
 const SettingsPage: React.FC = () => {
   const { settings, updateSettings, updateAIProvider, resetSettings } = useSettingsStore();
@@ -32,7 +35,8 @@ const SettingsPage: React.FC = () => {
   const [localSettings, setLocalSettings] = useState({ ...settings });
   const [saved, setSaved] = useState(false);
   const [activeTab, setActiveTab] = useState<'general' | 'users' | 'auth' | 'automations' | 'backend' | 'ai'>('general');
-  
+  const navigate = useNavigate();
+
   const handleSave = () => {
     updateSettings(localSettings);
     setSaved(true);
@@ -895,6 +899,62 @@ const SettingsPage: React.FC = () => {
                         >
                           Ver Logs
                         </Button>
+                      </div>
+                    </div>
+
+                    {/* Tests Section */}
+                    <div>
+                      <h3 className="text-md font-medium mb-3">Pruebas del Sistema</h3>
+                      <p className="text-sm text-gray-600 mb-3">
+                        Ejecuta pruebas para verificar el funcionamiento de los componentes del sistema.
+                      </p>
+                      
+                      <div className="p-4 border rounded-lg">
+                        <div className="flex items-center mb-4">
+                          <TestTube className="h-5 w-5 text-gray-500 mr-3" />
+                          <div>
+                            <p className="font-medium">Pruebas de Componentes</p>
+                            <p className="text-sm text-gray-600">Verifica el funcionamiento de los diferentes módulos del sistema</p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex flex-col space-y-2">
+                          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
+                            <div className="flex items-center">
+                              <Link className="h-4 w-4 text-gray-500 mr-2" />
+                              <span className="text-sm">Conexión a API</span>
+                            </div>
+                            <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-800">Funcionando</span>
+                          </div>
+                          
+                          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
+                            <div className="flex items-center">
+                              <Database className="h-4 w-4 text-gray-500 mr-2" />
+                              <span className="text-sm">Base de Datos</span>
+                            </div>
+                            <span className="text-xs px-2 py-1 rounded-full bg-yellow-100 text-yellow-800">No verificado</span>
+                          </div>
+                          
+                          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
+                            <div className="flex items-center">
+                              <Cpu className="h-4 w-4 text-gray-500 mr-2" />
+                              <span className="text-sm">Procesamiento OCR</span>
+                            </div>
+                            <span className="text-xs px-2 py-1 rounded-full bg-yellow-100 text-yellow-800">No verificado</span>
+                          </div>
+                        </div>
+                        
+                        <div className="mt-4">
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={() => navigate('/test')}
+                            icon={<TestTube className="h-4 w-4" />}
+                            fullWidth
+                          >
+                            Ir a Página de Pruebas
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </div>

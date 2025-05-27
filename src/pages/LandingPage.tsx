@@ -111,7 +111,7 @@ const LandingPage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
             <div>
               <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 leading-tight">
-                Cierra la Brecha en el <span className="text-red-600">Ciclo de Vida</span> de tus Activos IT
+                Amplía el <span className="text-red-600">Ciclo de Vida</span> de tus Activos IT
               </h1>
               <p className="text-xl text-gray-600 mb-8 leading-relaxed">
                 Gestiona las fases críticas iniciales que las herramientas DCIM tradicionales <span className="font-semibold">NO cubren</span>: desde la ideación, planificación y adquisición hasta la recepción física y verificación. Controla todo el proceso antes de que el equipo entre en producción.

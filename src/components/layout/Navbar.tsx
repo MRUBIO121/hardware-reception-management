@@ -56,15 +56,7 @@ const Navbar: React.FC = () => {
                 <span>Inicio</span>
               </div>
             </Link>
-            <button
-              onClick={showLanding}
-              className="px-3 py-2 rounded-md text-sm font-medium hover:bg-red-600"
-            >
-              <div className="flex items-center space-x-1">
-                <Info className="h-5 w-5" />
-                <span>Producto</span>
-              </div>
-            </button>
+            
             <Link 
               to="/projects" 
               className={`px-3 py-2 rounded-md text-sm font-medium ${isActive('/projects') ? 'bg-red-900' : 'hover:bg-red-600'}`}
@@ -74,6 +66,7 @@ const Navbar: React.FC = () => {
                 <span>Proyectos</span>
               </div>
             </Link>
+            
             <Link 
               to="/incidents" 
               className={`px-3 py-2 rounded-md text-sm font-medium ${isActive('/incidents') ? 'bg-red-900' : 'hover:bg-red-600'}`}
@@ -83,6 +76,17 @@ const Navbar: React.FC = () => {
                 <span>Incidencias</span>
               </div>
             </Link>
+
+            <button
+              onClick={showLanding}
+              className="px-3 py-2 rounded-md text-sm font-medium hover:bg-red-600"
+            >
+              <div className="flex items-center space-x-1">
+                <Info className="h-5 w-5" />
+                <span>Producto</span>
+              </div>
+            </button>
+            
             <Link 
               to="/settings" 
               className={`px-3 py-2 rounded-md text-sm font-medium ${isActive('/settings') ? 'bg-red-900' : 'hover:bg-red-600'}`}
@@ -90,15 +94,6 @@ const Navbar: React.FC = () => {
               <div className="flex items-center space-x-1">
                 <Settings className="h-5 w-5" />
                 <span>Ajustes</span>
-              </div>
-            </Link>
-            <Link 
-              to="/test" 
-              className={`px-3 py-2 rounded-md text-sm font-medium ${isActive('/test') ? 'bg-red-900' : 'hover:bg-red-600'}`}
-            >
-              <div className="flex items-center space-x-1">
-                <TestTube className="h-5 w-5" />
-                <span>Tests</span>
               </div>
             </Link>
             
@@ -151,6 +146,16 @@ const Navbar: React.FC = () => {
                       <div className="flex items-center">
                         <Settings className="h-4 w-4 mr-2" />
                         <span>Ajustes</span>
+                      </div>
+                    </Link>
+                    <Link
+                      to="/test"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={() => setIsProfileOpen(false)}
+                    >
+                      <div className="flex items-center">
+                        <TestTube className="h-4 w-4 mr-2" />
+                        <span>Tests</span>
                       </div>
                     </Link>
                     <button
@@ -280,16 +285,6 @@ const Navbar: React.FC = () => {
               <div className="flex items-center space-x-2">
                 <Settings className="h-5 w-5" />
                 <span>Ajustes</span>
-              </div>
-            </Link>
-            <Link 
-              to="/test" 
-              className={`block px-3 py-2 rounded-md text-base font-medium ${isActive('/test') ? 'bg-red-900' : 'hover:bg-red-600'}`}
-              onClick={() => setIsOpen(false)}
-            >
-              <div className="flex items-center space-x-2">
-                <TestTube className="h-5 w-5" />
-                <span>Tests</span>
               </div>
             </Link>
           </div>

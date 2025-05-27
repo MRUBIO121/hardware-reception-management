@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Package, Clipboard, FileText, Menu, X, Settings, User, LogOut, ChevronDown, Info, TestTube } from 'lucide-react';
+import { Home, Package, Clipboard, FileText, Menu, X, Settings, User, LogOut, ChevronDown } from 'lucide-react';
 import { useUserStore } from '../../store/userStore';
 import ApiStatusIndicator from './ApiStatusIndicator';
 
@@ -28,10 +28,6 @@ const Navbar: React.FC = () => {
   
   const isActive = (path: string) => {
     return location.pathname === path || location.pathname.startsWith(`${path}/`);
-  };
-  
-  const showLanding = () => {
-    navigate('/');
   };
   
   return (
@@ -84,16 +80,6 @@ const Navbar: React.FC = () => {
               <div className="flex items-center space-x-1">
                 <Settings className="h-5 w-5" />
                 <span>Ajustes</span>
-              </div>
-            </Link>
-            
-            <Link 
-              to="/test" 
-              className={`px-3 py-2 rounded-md text-sm font-medium ${isActive('/test') ? 'bg-red-900' : 'hover:bg-red-600'}`}
-            >
-              <div className="flex items-center space-x-1">
-                <TestTube className="h-5 w-5" />
-                <span>Tests</span>
               </div>
             </Link>
             
@@ -255,16 +241,6 @@ const Navbar: React.FC = () => {
               <div className="flex items-center space-x-2">
                 <Settings className="h-5 w-5" />
                 <span>Ajustes</span>
-              </div>
-            </Link>
-            <Link 
-              to="/test" 
-              className={`block px-3 py-2 rounded-md text-base font-medium ${isActive('/test') ? 'bg-red-900' : 'hover:bg-red-600'}`}
-              onClick={() => setIsOpen(false)}
-            >
-              <div className="flex items-center space-x-2">
-                <TestTube className="h-5 w-5" />
-                <span>Tests</span>
               </div>
             </Link>
           </div>

@@ -138,26 +138,6 @@ const Navbar: React.FC = () => {
                         <span>Mi Perfil</span>
                       </div>
                     </Link>
-                    <Link
-                      to="/settings"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      onClick={() => setIsProfileOpen(false)}
-                    >
-                      <div className="flex items-center">
-                        <Settings className="h-4 w-4 mr-2" />
-                        <span>Ajustes</span>
-                      </div>
-                    </Link>
-                    <Link
-                      to="/test"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      onClick={() => setIsProfileOpen(false)}
-                    >
-                      <div className="flex items-center">
-                        <TestTube className="h-4 w-4 mr-2" />
-                        <span>Tests</span>
-                      </div>
-                    </Link>
                     <button
                       className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
                       onClick={handleLogout}

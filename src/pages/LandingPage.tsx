@@ -114,7 +114,7 @@ const LandingPage: React.FC = () => {
                 Amplía el <span className="text-red-600">Ciclo de Vida</span> de tus Activos IT
               </h1>
               <p className="text-xl text-gray-600 mb-8 leading-relaxed">
-                Gestiona las fases críticas iniciales que las herramientas DCIM tradicionales <span className="font-semibold">NO cubren</span>: desde la ideación, planificación y adquisición hasta la recepción física y verificación. Controla todo el proceso antes de que el equipo entre en producción.
+                Gestiona las fases clave del ciclo de vida de los equipos, desde la ideación, planificación y adquisición, hasta la recepción física y verificación. Cubre etapas fundamentales que van más allá del alcance de las herramientas DCIM tradicionales, asegurando el control completo antes de que el equipo entre en producción.
               </p>
               <div className="flex space-x-4">
                 <Link to="/home">

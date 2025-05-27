@@ -87,19 +87,9 @@ const SettingsPage: React.FC = () => {
   
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
-      <div className="mb-6 flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Ajustes</h1>
-          <p className="text-gray-600">Configura las preferencias de la aplicación</p>
-        </div>
-        <Button
-          variant="outline"
-          size="md"
-          icon={<TestTube className="h-5 w-5" />}
-          onClick={navigateToTests}
-        >
-          Pruebas del Sistema
-        </Button>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Ajustes</h1>
+        <p className="text-gray-600">Configura las preferencias de la aplicación</p>
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -165,6 +155,14 @@ const SettingsPage: React.FC = () => {
               >
                 <Database className="h-5 w-5 mr-2" />
                 <span>Backend</span>
+              </button>
+
+              <button
+                className="px-4 py-3 text-left flex items-center hover:bg-gray-50 text-gray-700"
+                onClick={navigateToTests}
+              >
+                <TestTube className="h-5 w-5 mr-2" />
+                <span>Pruebas del Sistema</span>
               </button>
             </nav>
           </div>

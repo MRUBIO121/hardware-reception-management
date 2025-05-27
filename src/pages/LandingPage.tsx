@@ -99,7 +99,7 @@ const LandingPage: React.FC = () => {
                 Amplía el <span className="text-red-600">Ciclo de Vida</span> de tus Activos IT
               </h1>
               <p className="text-xl text-gray-600 mb-8 leading-relaxed">
-                Gestiona las fases clave del ciclo de vida de los equipos, desde la ideación, planificación y adquisición, hasta la recepción física y verificación. Cubre etapas fundamentales que van más allá del alcance de las herramientas DCIM tradicionales, asegurando el control completo antes de que el equipo entre en producción.
+                Automatización del proceso de recepción de hardware en el centro de datos y su integración en el DCIM corporativo para un mayor control del ciclo de vida de los activos. Esta solución permite gestionar las fases clave del ciclo de vida de los equipos, desde la ideación, planificación y adquisición, hasta la recepción física y verificación. Cubre etapas fundamentales que van más allá del alcance de las herramientas DCIM tradicionales, asegurando un control completo antes de que el equipo entre en producción.
               </p>
               <div className="flex space-x-4">
                 <Link to="/home">
@@ -124,7 +124,7 @@ const LandingPage: React.FC = () => {
               </div>
             </div>
             <div className="relative">
-              <div className="relative rounded-lg shadow-2xl overflow-hidden">
+              <div className="relative rounded-lg shadow-2xl overflow-hidden w-full" style={{ height: '70vh' }}>
                 <img 
                   src="https://d37oebn0w9ir6a.cloudfront.net/account_24860/datacenterassetmanagement_24984c8b0a2aa9db1fa6a9459d306db3.jpg"
                   alt="DCIM Dashboard"

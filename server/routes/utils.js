@@ -3,7 +3,7 @@ import {
   analyzeDocument, 
   generateDeviceName, 
   exportToExcel,
-  getSettings,
+  getAppSettings,
   updateSettings
 } from '../controllers/utilsController.js';
 
@@ -19,7 +19,7 @@ router.get('/generate-device-name', generateDeviceName);
 router.post('/export-excel', exportToExcel);
 
 // Get settings
-router.get('/settings', getSettings);
+router.get('/settings', getAppSettings);
 
 // Update settings
 router.put('/settings', updateSettings);

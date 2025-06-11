@@ -237,7 +237,7 @@ export const exportToExcel = async (req, res, next) => {
 };
 
 // Get current settings
-export const getSettings = async (req, res, next) => {
+export const getAppSettings = async (req, res, next) => {
   try {
     const settings = getSettings();
     res.json(settings);

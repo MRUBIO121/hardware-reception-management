@@ -27,9 +27,9 @@ export const analyzeDocument = async (req, res, next) => {
     
     let result;
     
-    if (ocrMethod === 'mistral') {
-      // Use Mistral AI for OCR
-      result = await analyzeWithMistral(fileBase64, fileType);
+    if (ocrMethod === 'ai') {
+      // Use AI for OCR
+      result = await analyzeWithAI(fileBase64, fileType);
     } else {
       // Use local OCR (simplified here)
       result = await analyzeWithLocalOCR(fileBase64, fileType);
@@ -42,12 +42,14 @@ export const analyzeDocument = async (req, res, next) => {
   }
 };
 
-// Helper function to analyze document with Mistral AI
-const analyzeWithMistral = async (fileBase64, fileType) => {
+// Helper function to analyze document with AI
+const analyzeWithAI = async (fileBase64, fileType) => {
   try {
+    const settings = getSettings();
+    
     // Skip actual API call in demo environment
-    if (process.env.NODE_ENV !== 'production') {
-      logger.info('Demo environment - returning mock Mistral analysis');
+    if (process.env.NODE_ENV !== 'production' || settings.demoMode) {
+      logger.info('Demo environment - returning mock AI analysis');
       
       // Return mock data
       return {
@@ -70,11 +72,10 @@ const analyzeWithMistral = async (fileBase64, fileType) => {
       };
     }
     
-    // Get Mistral API Key
-    const apiKey = process.env.VITE_MISTRAL_API_KEY;
+    const aiProvider = settings.aiProvider;
     
-    if (!apiKey) {
-      throw new Error('Mistral API key is not configured');
+    if (!aiProvider || !aiProvider.apiKey) {
+      throw new Error('API key is not configured');
     }
     
     // Get prompt
@@ -87,57 +88,176 @@ const analyzeWithMistral = async (fileBase64, fileType) => {
         ? 'image/jpeg' 
         : 'application/octet-stream';
     
-    // Call Mistral API
-    const response = await axios.post(
-      'https://api.mistral.ai/v1/chat/completions',
-      {
-        model: 'mistral-large-latest',
-        messages: [
-          { role: 'system', content: prompt },
-          { 
-            role: 'user', 
-            content: [
-              { 
-                type: 'text', 
-                text: 'Analiza el siguiente documento y extrae la información de los equipos' 
-              },
-              { 
-                type: 'image', 
-                image_url: {
-                  url: `data:${contentType};base64,${fileBase64}`
-                } 
-              }
-            ] 
-          }
-        ],
-        temperature: 0.1,
-        max_tokens: 2000
-      },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
-        }
-      }
-    );
-    
-    // Parse the response
-    const aiResponse = response.data.choices[0].message.content;
-    
-    // Extract JSON from response
-    const jsonMatch = aiResponse.match(/```json([\s\S]*?)```/) || 
-                      aiResponse.match(/{[\s\S]*}/);
-    
-    if (jsonMatch) {
-      const jsonStr = jsonMatch[1] ? jsonMatch[1].trim() : jsonMatch[0].trim();
-      return JSON.parse(jsonStr);
+    // Call the appropriate AI API based on provider
+    switch (aiProvider.name) {
+      case 'OpenAI':
+        return await callOpenAI(fileBase64, contentType, prompt, aiProvider);
+      case 'AzureOpenAI':
+        return await callAzureOpenAI(fileBase64, contentType, prompt, aiProvider);
+      case 'MistralAI':
+      default:
+        return await callMistralAI(fileBase64, contentType, prompt, aiProvider);
     }
-    
-    throw new Error('No se pudo extraer información estructurada del documento');
   } catch (error) {
-    logger.error('Error analyzing with Mistral AI:', error);
+    logger.error('Error analyzing with AI:', error);
     throw error;
   }
+};
+
+// Helper function to call Mistral AI
+const callMistralAI = async (fileBase64, contentType, prompt, aiProvider) => {
+  // Call Mistral API
+  const response = await axios.post(
+    'https://api.mistral.ai/v1/chat/completions',
+    {
+      model: aiProvider.model,
+      messages: [
+        { role: 'system', content: prompt },
+        { 
+          role: 'user', 
+          content: [
+            { 
+              type: 'text', 
+              text: 'Analiza el siguiente documento y extrae la información de los equipos' 
+            },
+            { 
+              type: 'image', 
+              image_url: {
+                url: `data:${contentType};base64,${fileBase64}`
+              } 
+            }
+          ] 
+        }
+      ],
+      temperature: 0.1,
+      max_tokens: 2000
+    },
+    {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${aiProvider.apiKey}`
+      }
+    }
+  );
+  
+  // Parse the response
+  const aiResponse = response.data.choices[0].message.content;
+  
+  // Extract JSON from response
+  const jsonMatch = aiResponse.match(/```json([\s\S]*?)```/) || 
+                  aiResponse.match(/{[\s\S]*}/);
+  
+  if (jsonMatch) {
+    const jsonStr = jsonMatch[1] ? jsonMatch[1].trim() : jsonMatch[0].trim();
+    return JSON.parse(jsonStr);
+  }
+  
+  throw new Error('No se pudo extraer información estructurada del documento');
+};
+
+// Helper function to call OpenAI
+const callOpenAI = async (fileBase64, contentType, prompt, aiProvider) => {
+  // Call OpenAI API
+  const response = await axios.post(
+    'https://api.openai.com/v1/chat/completions',
+    {
+      model: aiProvider.model,
+      messages: [
+        { role: 'system', content: prompt },
+        { 
+          role: 'user', 
+          content: [
+            { 
+              type: 'text', 
+              text: 'Analiza el siguiente documento y extrae la información de los equipos' 
+            },
+            { 
+              type: 'image_url', 
+              image_url: {
+                url: `data:${contentType};base64,${fileBase64}`
+              } 
+            }
+          ] 
+        }
+      ],
+      temperature: 0.1,
+      max_tokens: 2000
+    },
+    {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${aiProvider.apiKey}`
+      }
+    }
+  );
+  
+  // Parse the response
+  const aiResponse = response.data.choices[0].message.content;
+  
+  // Extract JSON from response
+  const jsonMatch = aiResponse.match(/```json([\s\S]*?)```/) || 
+                  aiResponse.match(/{[\s\S]*}/);
+  
+  if (jsonMatch) {
+    const jsonStr = jsonMatch[1] ? jsonMatch[1].trim() : jsonMatch[0].trim();
+    return JSON.parse(jsonStr);
+  }
+  
+  throw new Error('No se pudo extraer información estructurada del documento');
+};
+
+// Helper function to call Azure OpenAI
+const callAzureOpenAI = async (fileBase64, contentType, prompt, aiProvider) => {
+  if (!aiProvider.endpoint || !aiProvider.version) {
+    throw new Error('Azure OpenAI endpoint or version not configured');
+  }
+  
+  // Call Azure OpenAI API
+  const response = await axios.post(
+    `${aiProvider.endpoint}/openai/deployments/${aiProvider.model}/chat/completions?api-version=${aiProvider.version}`,
+    {
+      messages: [
+        { role: 'system', content: prompt },
+        { 
+          role: 'user', 
+          content: [
+            { 
+              type: 'text', 
+              text: 'Analiza el siguiente documento y extrae la información de los equipos' 
+            },
+            { 
+              type: 'image_url', 
+              image_url: {
+                url: `data:${contentType};base64,${fileBase64}`
+              } 
+            }
+          ] 
+        }
+      ],
+      temperature: 0.1,
+      max_tokens: 2000
+    },
+    {
+      headers: {
+        'Content-Type': 'application/json',
+        'api-key': aiProvider.apiKey
+      }
+    }
+  );
+  
+  // Parse the response
+  const aiResponse = response.data.choices[0].message.content;
+  
+  // Extract JSON from response
+  const jsonMatch = aiResponse.match(/```json([\s\S]*?)```/) || 
+                  aiResponse.match(/{[\s\S]*}/);
+  
+  if (jsonMatch) {
+    const jsonStr = jsonMatch[1] ? jsonMatch[1].trim() : jsonMatch[0].trim();
+    return JSON.parse(jsonStr);
+  }
+  
+  throw new Error('No se pudo extraer información estructurada del documento');
 };
 
 // Helper function to analyze document with local OCR (simplified mock)

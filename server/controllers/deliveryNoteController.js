@@ -2,7 +2,6 @@ import { logger } from '../utils/logger.js';
 import { executeQuery, executeStoredProcedure } from '../utils/dbConnector.js';
 import { getSettings } from '../utils/settings.js';
 import { sampleProjects } from '../data/sampleData.js';
-import { calculateDeliveryNoteProgress } from '../utils/helpers.js';
 
 // Get all delivery notes
 export const getAllDeliveryNotes = async (req, res, next) => {
